@@ -23,6 +23,7 @@ import TodoList from './pages/TodoList';
 import './index.css';
 
 var todoItems = [];
+var address = "0x6C75f55060b7DE043EE7338127b6Abee3A3Ef419";
   
 class TodoApp extends React.Component {
   constructor (props) {
@@ -38,12 +39,21 @@ class TodoApp extends React.Component {
       const web3 = await getWeb3();
       const accounts = await web3.eth.getAccounts();
       const networkId = await web3.eth.net.getId();
-      const deployedNetwork = TodoAppContract.networks[networkId];
+      // console.log(networkId);
+      const deployedNetwork = TodoAppContract.networks["1607442141440"];
+      console.log(deployedNetwork);
       const instance = new web3.eth.Contract(
         TodoAppContract.abi,
         deployedNetwork && deployedNetwork.address,
       );
+      instance.options.from = address;
       this.setState({ web3, accounts, contract: instance });
+      console.log(instance);
+      instance.methods.getTodoList().call()
+      .then((result) => {
+        console.log(JSON.stringify(result));
+      });
+      // console.log(a);
     } catch (error) {
       alert(
         `Failed to load web3, accounts, or contract. Check console for details.`,
@@ -58,6 +68,7 @@ class TodoApp extends React.Component {
   
 
   addItem (todoItem) {
+    this.state.contract.methods.addTodo(todoItem.newItemValue).send({from: address});
     todoItems.unshift({
       index: todoItems.length+1, 
       value: todoItem.newItemValue, 
@@ -66,6 +77,7 @@ class TodoApp extends React.Component {
     this.setState({todoItems: todoItems});
   }
   removeItem (itemIndex) {
+    this.state.instance.methods.deleteTodo(itemIndex).send({from: address});
     todoItems.splice(itemIndex, 1);
     this.setState({todoItems: todoItems});
   }
@@ -73,8 +85,10 @@ class TodoApp extends React.Component {
     var todo = todoItems[itemIndex];
     todoItems.splice(itemIndex, 1);
     if (todo.done) {
-
+      this.state.instance.methods.undoneTodo(itemIndex).send({from: address});
+      
     } else {
+      this.state.instance.methods.completeTodo(itemIndex).send({from: address});
 
     }
     todo.done = !todo.done;
